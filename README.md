@@ -1,87 +1,74 @@
-# kasm-upscayl
+# kasm-images
 
-A pre-built [Kasm Workspace](https://kasm.com/) image with [Upscayl](https://upscayl.org/) — the open-source AI image upscaler — with NVIDIA GPU support.
+Pre-built [Kasm Workspace](https://kasm.com/) images with NVIDIA GPU support, automatically built and published to GHCR.
 
-## Quick Start
+## Images
 
-On your Kasm host, run:
-
-```bash
-bash <(wget -qO- https://raw.githubusercontent.com/therepos/kasm-upscayl/main/install.sh)
-```
-
-This pulls the pre-built image from GHCR and gives you the Kasm registration instructions.
-
-## What's Included
-
-- **Base:** `kasmweb/core-ubuntu-jammy:1.17.0`
-- **Upscayl:** Latest release (auto-fetched at build time)
-- **GPU deps:** Vulkan drivers, mesa, NVIDIA runtime support
-- **Desktop shortcut:** Launches Upscayl on session start
+| Image | Description | GHCR |
+|---|---|---|
+| **upscayl** | AI image upscaler ([Upscayl](https://upscayl.org/)) | `ghcr.io/therepos/kasm-images/upscayl:1.17.0` |
+| **comfyui** | Node-based AI image toolkit (coming soon) | — |
+| **iopaint** | AI inpainting/outpainting tool (coming soon) | — |
 
 ## Prerequisites
 
-- Kasm Workspaces 1.17.0 running on Ubuntu
+- Kasm Workspaces 1.17.0 on Ubuntu
 - NVIDIA GPU with drivers installed on the host
 - [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) configured for Docker
 
-## Manual Setup
+## Usage
 
-### Option A: Pull from GHCR (recommended)
+### 1. Pull the image
 
 ```bash
-docker pull ghcr.io/therepos/kasm-upscayl:1.17.0
+docker pull ghcr.io/therepos/kasm-images/upscayl:1.17.0
 ```
 
-Then register in Kasm Admin:
+### 2. Register in Kasm Admin
+
+1. Go to **Admin → Workspaces → Add Workspace**
+2. Fill in:
 
 | Field | Value |
 |---|---|
 | Friendly Name | `Upscayl` |
-| Docker Image | `ghcr.io/therepos/kasm-upscayl:1.17.0` |
+| Docker Image | `ghcr.io/therepos/kasm-images/upscayl:1.17.0` |
 | Cores | `4` |
 | Memory (MB) | `4096` |
 | GPU Count | `1` |
 
-Docker Run Config Override:
+3. Set **Docker Run Config Override (JSON)**:
 
 ```json
-{"environment":{"NVIDIA_DRIVER_CAPABILITIES":"all","NVIDIA_VISIBLE_DEVICES":"all"}}
+{
+  "environment": {
+    "NVIDIA_DRIVER_CAPABILITIES": "all",
+    "NVIDIA_VISIBLE_DEVICES": "all"
+  }
+}
 ```
 
-### Option B: Build locally
-
-```bash
-git clone https://github.com/therepos/kasm-upscayl.git
-cd kasm-upscayl
-sudo ./build.sh 1.17.0
-```
-
-## Upgrading Kasm Version
-
-If you upgrade Kasm to a newer version (e.g., 1.18.0):
-
-```bash
-# Local build
-sudo ./build.sh 1.18.0
-
-# Or trigger GitHub Actions with a different version
-# via workflow_dispatch in the Actions tab
-```
+4. Click **Save**, then launch from the Dashboard.
 
 ## Automated Builds
 
-GitHub Actions rebuilds the image:
+GitHub Actions rebuilds all images:
 
-- On every push to `main`
-- Weekly (Sunday 03:00 UTC) to pick up new Upscayl releases
-- On manual trigger via `workflow_dispatch`
+- On every push to `main` that changes a Dockerfile
+- Weekly (Sunday 03:00 UTC) to pick up upstream updates
+- On manual trigger via `workflow_dispatch` (build one or all)
+
+## Adding a New Image
+
+1. Create a new directory: `mkdir myapp`
+2. Add a `Dockerfile` based on `kasmweb/core-ubuntu-jammy`
+3. Push to `main` — GitHub Actions builds and publishes it automatically
 
 ## Troubleshooting
 
 ### Black screen on launch
 
-Add DRI devices to the Docker Run Config Override:
+Add DRI devices to Docker Run Config Override:
 
 ```json
 {
@@ -96,20 +83,18 @@ Add DRI devices to the Docker Run Config Override:
 }
 ```
 
-### Upscayl won't start
+### App won't start
 
-Ensure `--no-sandbox` is in the Exec command (already set in the desktop shortcut). Electron apps require this inside containers.
+Electron apps need `--no-sandbox` inside containers (already set in desktop shortcuts).
 
-### "No Vulkan GPU found"
-
-Verify GPU access inside the Kasm session terminal:
+### GPU not detected in session
 
 ```bash
 nvidia-smi
 vulkaninfo --summary
 ```
 
-If these fail, check your Proxmox GPU passthrough (IOMMU, vfio-pci) and NVIDIA Container Toolkit setup.
+If these fail, check Proxmox GPU passthrough (IOMMU, vfio-pci) and NVIDIA Container Toolkit.
 
 ## License
 

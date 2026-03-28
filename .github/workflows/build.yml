@@ -3,14 +3,18 @@ name: Build and Push to GHCR
 on:
   push:
     branches: [main]
-    tags: ["v*"]
-  pull_request:
-    branches: [main]
+    paths:
+      - "*/Dockerfile"
+      - ".github/workflows/build.yml"
   schedule:
-    # Rebuild weekly on Sunday at 03:00 UTC to pick up Upscayl updates
+    # Rebuild weekly on Sunday 03:00 UTC to pick up upstream updates
     - cron: "0 3 * * 0"
   workflow_dispatch:
     inputs:
+      image:
+        description: "Image to build (or 'all')"
+        required: false
+        default: "all"
       kasm_version:
         description: "Kasm base image version"
         required: false
@@ -18,57 +22,75 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+  KASM_VERSION: "1.17.0"
 
 jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      images: ${{ steps.set-matrix.outputs.images }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Determine which images to build
+        id: set-matrix
+        run: |
+          INPUT="${{ github.event.inputs.image }}"
+
+          if [[ "${{ github.event_name }}" == "schedule" || "${INPUT}" == "all" || -z "${INPUT}" ]]; then
+            # Build all images that have a non-placeholder Dockerfile
+            IMAGES=$(find . -maxdepth 2 -name Dockerfile -exec grep -L "^# TODO" {} \; \
+              | sed 's|./||;s|/Dockerfile||' | jq -R -s -c 'split("\n") | map(select(. != ""))')
+          else
+            IMAGES="[\"${INPUT}\"]"
+          fi
+
+          echo "images=${IMAGES}" >> "$GITHUB_OUTPUT"
+          echo "Building: ${IMAGES}"
+
   build-and-push:
+    needs: detect-changes
+    if: ${{ needs.detect-changes.outputs.images != '[]' && needs.detect-changes.outputs.images != '' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
 
     strategy:
+      fail-fast: false
       matrix:
-        kasm_version: ["1.17.0"]
+        image: ${{ fromJson(needs.detect-changes.outputs.images) }}
 
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
       - name: Log in to GHCR
-        if: github.event_name != 'pull_request'
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          tags: |
-            # Tag with kasm version
-            type=raw,value=${{ matrix.kasm_version }}
-            # Tag with git tag if present
-            type=semver,pattern={{version}}
-            # Tag latest on main branch
-            type=raw,value=latest,enable={{is_default_branch}}
-            # Tag with date for weekly builds
-            type=schedule,pattern={{date 'YYYYMMDD'}}
+      - name: Set version
+        id: version
+        run: |
+          KASM_VER="${{ github.event.inputs.kasm_version || env.KASM_VERSION }}"
+          echo "kasm_version=${KASM_VER}" >> "$GITHUB_OUTPUT"
 
       - name: Build and push
         uses: docker/build-push-action@v5
         with:
-          context: .
-          push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          context: ./${{ matrix.image }}
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/therepos/kasm-images/${{ matrix.image }}:${{ steps.version.outputs.kasm_version }}
+            ${{ env.REGISTRY }}/therepos/kasm-images/${{ matrix.image }}:latest
           build-args: |
-            KASM_VERSION=${{ matrix.kasm_version }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+            KASM_VERSION=${{ steps.version.outputs.kasm_version }}
+          cache-from: type=gha,scope=${{ matrix.image }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.image }}
