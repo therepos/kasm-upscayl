@@ -40,10 +40,11 @@ RUN LATEST_URL=$(wget -qO- https://api.github.com/repos/upscayl/upscayl/releases
     && dpkg -i /tmp/upscayl.deb || apt-get install -f -y \
     && rm /tmp/upscayl.deb
 
-# Create desktop shortcut
-RUN printf '[Desktop Entry]\nType=Application\nName=Upscayl\nExec=/usr/bin/upscayl --no-sandbox\nIcon=upscayl\nTerminal=false\nCategories=Graphics;\n' \
-    > $HOME/Desktop/upscayl.desktop \
-    && chmod +x $HOME/Desktop/upscayl.desktop
+# Auto-launch Upscayl on session start
+RUN mkdir -p $HOME/.config/autostart && \
+    printf '[Desktop Entry]\nType=Application\nName=Upscayl\nExec=/usr/bin/upscayl --no-sandbox\nX-GNOME-Autostart-enabled=true\n' \
+    > $HOME/.config/autostart/upscayl.desktop && \
+    chmod +x $HOME/.config/autostart/upscayl.desktop
 
 ######### End Customizations ###########
 
