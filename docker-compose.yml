@@ -1,3 +1,6 @@
+# docker pull ghcr.io/therepos/kasm-images/upscayl:latest
+# deploy via portainer stack
+
 services:
   upscayl:
     image: ghcr.io/therepos/kasm-images/upscayl:latest
@@ -5,14 +8,11 @@ services:
     ports:
       - "3029:6901"
     environment:
-      - VNC_PW=${VNC_PW}
+      - VNC_PW=${VNC_PW:-password}
       - NVIDIA_DRIVER_CAPABILITIES=all
       - NVIDIA_VISIBLE_DEVICES=all
     shm_size: 512m
     runtime: nvidia
     restart: unless-stopped
-    security_opt:
-      - apparmor=unconfined
-      - seccomp=unconfined
     volumes:
       - /mnt/sec/media/shared:/home/kasm-user/Downloads
