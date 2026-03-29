@@ -3,12 +3,15 @@ FROM kasmweb/core-ubuntu-jammy:${KASM_VERSION}
 
 USER root
 
-ENV HOME /home/kasm-default-profile
-ENV STARTUPDIR /dockerstartup
-ENV INST_SCRIPTS $STARTUPDIR/install
+ENV HOME=/home/kasm-default-profile
+ENV STARTUPDIR=/dockerstartup
+ENV INST_SCRIPTS=$STARTUPDIR/install
 WORKDIR $HOME
 
 ######### Customize Container Here ###########
+
+# Allow pip to install into system site-packages (works with any pip version)
+ENV PIP_BREAK_SYSTEM_PACKAGES=1
 
 # Install Python 3.11, pip, git, and GPU/system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -18,6 +21,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3-pip \
     git \
     wget \
+    curl \
     ca-certificates \
     libgl1 \
     libglib2.0-0 \
@@ -27,13 +31,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1 \
     && rm -rf /var/lib/apt/lists/*
 
+# Upgrade pip itself first
+RUN python3 -m pip install --no-cache-dir --upgrade pip
+
 # Clone ComfyUI
 RUN git clone https://github.com/comfyanonymous/ComfyUI.git /opt/comfyui
 
 # Install PyTorch (CUDA 12.1) and ComfyUI dependencies
-RUN python3 -m pip install --no-cache-dir --break-system-packages \
+RUN python3 -m pip install --no-cache-dir \
     torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu121 \
-    && python3 -m pip install --no-cache-dir --break-system-packages \
+    && python3 -m pip install --no-cache-dir \
     -r /opt/comfyui/requirements.txt
 
 # Install ComfyUI Manager
@@ -91,7 +98,7 @@ RUN which chromium || which chromium-browser || \
 RUN chown 1000:0 $HOME
 RUN $STARTUPDIR/set_user_permission.sh $HOME
 
-ENV HOME /home/kasm-user
+ENV HOME=/home/kasm-user
 WORKDIR $HOME
 RUN mkdir -p $HOME && chown -R 1000:0 $HOME
 
