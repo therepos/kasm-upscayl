@@ -40,9 +40,12 @@ RUN LATEST_URL=$(wget -qO- https://api.github.com/repos/upscayl/upscayl/releases
     && dpkg -i /tmp/upscayl.deb || apt-get install -f -y \
     && rm /tmp/upscayl.deb
 
-# Auto-launch Upscayl on session start
+# Auto-launch Upscayl with auto-restart on close
 RUN mkdir -p $HOME/.config/autostart && \
-    printf '[Desktop Entry]\nType=Application\nName=Upscayl\nExec=/usr/bin/upscayl --no-sandbox\nX-GNOME-Autostart-enabled=true\n' \
+    printf '#!/bin/bash\nwhile true; do\n  /usr/bin/upscayl --no-sandbox\n  sleep 1\ndone\n' \
+    > $HOME/.config/autostart/upscayl.sh && \
+    chmod +x $HOME/.config/autostart/upscayl.sh && \
+    printf '[Desktop Entry]\nType=Application\nName=Upscayl\nExec=%s/.config/autostart/upscayl.sh\nX-GNOME-Autostart-enabled=true\n' "$HOME" \
     > $HOME/.config/autostart/upscayl.desktop && \
     chmod +x $HOME/.config/autostart/upscayl.desktop
 
