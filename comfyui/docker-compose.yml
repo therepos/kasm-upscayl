@@ -1,0 +1,19 @@
+services:
+  comfyui:
+    image: ghcr.io/therepos/kasm-images/comfyui:latest
+    container_name: comfyui
+    ports:
+      - "6901:6901"
+      - "8188:8188"
+    environment:
+      - VNC_PW=${VNC_PW}
+      - NVIDIA_DRIVER_CAPABILITIES=all
+      - NVIDIA_VISIBLE_DEVICES=all
+    shm_size: 2g
+    runtime: nvidia
+    restart: unless-stopped
+    security_opt:
+      - apparmor=unconfined
+      - seccomp=unconfined
+    volumes:
+      - /mnt/sec/media/shared:/home/kasm-user/Downloads
