@@ -30,6 +30,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libxdamage1 \
     libxrandr2 \
     xdg-utils \
+    wmctrl \
+    xdotool \
     && rm -rf /var/lib/apt/lists/*
 
 # Download and install latest Upscayl .deb
@@ -40,9 +42,9 @@ RUN LATEST_URL=$(wget -qO- https://api.github.com/repos/upscayl/upscayl/releases
     && dpkg -i /tmp/upscayl.deb || apt-get install -f -y \
     && rm /tmp/upscayl.deb
 
-# Auto-launch Upscayl with auto-restart on close
+# Auto-launch Upscayl fullscreen with auto-restart on close
 RUN mkdir -p $HOME/.config/autostart && \
-    printf '#!/bin/bash\nwhile true; do\n  /usr/bin/upscayl --no-sandbox\n  sleep 1\ndone\n' \
+    printf '#!/bin/bash\nwhile true; do\n  /usr/bin/upscayl --no-sandbox --start-maximized &\n  UPSCAYL_PID=$!\n  sleep 3\n  # Wait for the window to appear and maximize it\n  for i in $(seq 1 10); do\n    WID=$(xdotool search --pid $UPSCAYL_PID --name "." 2>/dev/null | head -1)\n    if [ -n "$WID" ]; then\n      wmctrl -i -r "$WID" -b add,maximized_vert,maximized_horz\n      break\n    fi\n    sleep 1\n  done\n  wait $UPSCAYL_PID\n  sleep 1\ndone\n' \
     > $HOME/.config/autostart/upscayl.sh && \
     chmod +x $HOME/.config/autostart/upscayl.sh && \
     printf '[Desktop Entry]\nType=Application\nName=Upscayl\nExec=%s/.config/autostart/upscayl.sh\nX-GNOME-Autostart-enabled=true\n' "$HOME" \
