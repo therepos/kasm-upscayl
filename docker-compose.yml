@@ -1,0 +1,18 @@
+services:
+  upscayl:
+    image: ghcr.io/therepos/kasm-images/upscayl:latest
+    container_name: upscayl
+    ports:
+      - "6901:6901"
+    environment:
+      - VNC_PW=${VNC_PW}
+      - NVIDIA_DRIVER_CAPABILITIES=all
+      - NVIDIA_VISIBLE_DEVICES=all
+    shm_size: 512m
+    runtime: nvidia
+    restart: unless-stopped
+    security_opt:
+      - apparmor=unconfined
+      - seccomp=unconfined
+    volumes:
+      - /mnt/sec/media/shared:/home/kasm-user/Downloads
