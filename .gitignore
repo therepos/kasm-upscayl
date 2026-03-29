@@ -1,4 +1,3 @@
 *.log
-!**/leveldb/*.log
-!**/leveldb/LOG
 .DS_Store
+tmp/
