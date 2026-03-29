@@ -43,7 +43,7 @@ RUN LATEST_URL=$(wget -qO- https://api.github.com/repos/upscayl/upscayl/releases
 
 # Auto-launch Upscayl maximized with auto-restart on close
 RUN mkdir -p $HOME/.config/autostart && \
-    printf '#!/bin/bash\nwhile true; do\n  /usr/bin/upscayl --no-sandbox &\n  UPSCAYL_PID=$!\n  sleep 3\n  wmctrl -r Upscayl -b add,maximized_vert,maximized_horz\n  wait $UPSCAYL_PID\n  sleep 1\ndone\n' \
+    printf '#!/bin/bash\nwhile true; do\n  /usr/bin/upscayl --no-sandbox &\n  UPSCAYL_PID=$!\n  for i in $(seq 1 20); do\n    if wmctrl -r Upscayl -b add,maximized_vert,maximized_horz 2>/dev/null; then\n      break\n    fi\n    sleep 0.2\n  done\n  wait $UPSCAYL_PID\n  sleep 1\ndone\n' \
     > $HOME/.config/autostart/upscayl.sh && \
     chmod +x $HOME/.config/autostart/upscayl.sh && \
     printf '[Desktop Entry]\nType=Application\nName=Upscayl\nExec=%s/.config/autostart/upscayl.sh\nX-GNOME-Autostart-enabled=true\n' "$HOME" \
