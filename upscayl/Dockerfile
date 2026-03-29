@@ -46,6 +46,10 @@ RUN mkdir -p $HOME/.config/autostart && \
     > $HOME/.config/autostart/upscayl.desktop && \
     chmod +x $HOME/.config/autostart/upscayl.desktop
 
+# Skip welcome/onboarding screen
+RUN mkdir -p "$HOME/.config/Upscayl/Local Storage"
+COPY localstorage/ "$HOME/.config/Upscayl/Local Storage/"
+
 ######### End Customizations ###########
 
 RUN chown 1000:0 $HOME
