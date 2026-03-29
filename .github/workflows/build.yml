@@ -76,11 +76,19 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Set version
-        id: version
+      - name: Detect image type
+        id: meta
         run: |
           KASM_VER="${{ github.event.inputs.kasm_version || env.KASM_VERSION }}"
-          echo "kasm_version=${KASM_VER}" >> "$GITHUB_OUTPUT"
+          if grep -q "kasmweb/" ./${{ matrix.image }}/Dockerfile; then
+            echo "is_kasm=true" >> "$GITHUB_OUTPUT"
+            echo "build_args=KASM_VERSION=${KASM_VER}" >> "$GITHUB_OUTPUT"
+            echo "extra_tag=${{ env.REGISTRY }}/therepos/kasm-images/${{ matrix.image }}:${KASM_VER}" >> "$GITHUB_OUTPUT"
+          else
+            echo "is_kasm=false" >> "$GITHUB_OUTPUT"
+            echo "build_args=" >> "$GITHUB_OUTPUT"
+            echo "extra_tag=" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Build and push
         uses: docker/build-push-action@v5
@@ -89,9 +97,9 @@ jobs:
           push: true
           provenance: false
           tags: |
-            ${{ env.REGISTRY }}/therepos/kasm-images/${{ matrix.image }}:${{ steps.version.outputs.kasm_version }}
             ${{ env.REGISTRY }}/therepos/kasm-images/${{ matrix.image }}:latest
+            ${{ steps.meta.outputs.extra_tag }}
           build-args: |
-            KASM_VERSION=${{ steps.version.outputs.kasm_version }}
+            ${{ steps.meta.outputs.build_args }}
           cache-from: type=gha,scope=${{ matrix.image }}
           cache-to: type=gha,mode=max,scope=${{ matrix.image }}
