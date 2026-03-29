@@ -4,17 +4,12 @@ on:
   push:
     branches: [main]
     paths:
-      - "*/Dockerfile"
+      - "Dockerfile"
       - ".github/workflows/build.yml"
   schedule:
-    # Rebuild weekly on Sunday 03:00 UTC to pick up upstream updates
     - cron: "0 3 * * 0"
   workflow_dispatch:
     inputs:
-      image:
-        description: "Image to build (or 'all')"
-        required: false
-        default: "all"
       kasm_version:
         description: "Kasm base image version"
         required: false
@@ -25,42 +20,11 @@ env:
   KASM_VERSION: "1.17.0"
 
 jobs:
-  detect-changes:
-    runs-on: ubuntu-latest
-    outputs:
-      images: ${{ steps.set-matrix.outputs.images }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Determine which images to build
-        id: set-matrix
-        run: |
-          INPUT="${{ github.event.inputs.image }}"
-
-          if [[ "${{ github.event_name }}" == "schedule" || "${INPUT}" == "all" || -z "${INPUT}" ]]; then
-            # Build all images that have a non-placeholder Dockerfile
-            IMAGES=$(find . -maxdepth 2 -name Dockerfile -exec grep -L "^# TODO" {} \; \
-              | sed 's|./||;s|/Dockerfile||' | jq -R -s -c 'split("\n") | map(select(. != ""))')
-          else
-            IMAGES="[\"${INPUT}\"]"
-          fi
-
-          echo "images=${IMAGES}" >> "$GITHUB_OUTPUT"
-          echo "Building: ${IMAGES}"
-
   build-and-push:
-    needs: detect-changes
-    if: ${{ needs.detect-changes.outputs.images != '[]' && needs.detect-changes.outputs.images != '' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
-
-    strategy:
-      fail-fast: false
-      matrix:
-        image: ${{ fromJson(needs.detect-changes.outputs.images) }}
 
     steps:
       - name: Checkout
@@ -76,30 +40,16 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Detect image type
-        id: meta
-        run: |
-          KASM_VER="${{ github.event.inputs.kasm_version || env.KASM_VERSION }}"
-          if grep -q "kasmweb/" ./${{ matrix.image }}/Dockerfile; then
-            echo "is_kasm=true" >> "$GITHUB_OUTPUT"
-            echo "build_args=KASM_VERSION=${KASM_VER}" >> "$GITHUB_OUTPUT"
-            echo "extra_tag=${{ env.REGISTRY }}/therepos/kasm-images/${{ matrix.image }}:${KASM_VER}" >> "$GITHUB_OUTPUT"
-          else
-            echo "is_kasm=false" >> "$GITHUB_OUTPUT"
-            echo "build_args=" >> "$GITHUB_OUTPUT"
-            echo "extra_tag=" >> "$GITHUB_OUTPUT"
-          fi
-
       - name: Build and push
         uses: docker/build-push-action@v5
         with:
-          context: ./${{ matrix.image }}
+          context: .
           push: true
           provenance: false
           tags: |
-            ${{ env.REGISTRY }}/therepos/kasm-images/${{ matrix.image }}:latest
-            ${{ steps.meta.outputs.extra_tag }}
+            ${{ env.REGISTRY }}/therepos/kasm-images/upscayl:latest
+            ${{ env.REGISTRY }}/therepos/kasm-images/upscayl:${{ github.event.inputs.kasm_version || env.KASM_VERSION }}
           build-args: |
-            ${{ steps.meta.outputs.build_args }}
-          cache-from: type=gha,scope=${{ matrix.image }}
-          cache-to: type=gha,mode=max,scope=${{ matrix.image }}
+            KASM_VERSION=${{ github.event.inputs.kasm_version || env.KASM_VERSION }}
+          cache-from: type=gha,scope=upscayl
+          cache-to: type=gha,mode=max,scope=upscayl
