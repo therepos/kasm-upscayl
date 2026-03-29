@@ -87,6 +87,7 @@ jobs:
         with:
           context: ./${{ matrix.image }}
           push: true
+          provenance: false
           tags: |
             ${{ env.REGISTRY }}/therepos/kasm-images/${{ matrix.image }}:${{ steps.version.outputs.kasm_version }}
             ${{ env.REGISTRY }}/therepos/kasm-images/${{ matrix.image }}:latest
