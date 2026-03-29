@@ -47,8 +47,8 @@ RUN mkdir -p $HOME/.config/autostart && \
     chmod +x $HOME/.config/autostart/upscayl.desktop
 
 # Skip welcome/onboarding screen
-RUN mkdir -p "$HOME/.config/Upscayl/Local Storage"
-COPY localstorage/ "$HOME/.config/Upscayl/Local Storage/"
+RUN mkdir -p "$HOME/.config/Upscayl/Local Storage/leveldb"
+COPY localstorage/leveldb/ "$HOME/.config/Upscayl/Local Storage/leveldb/"
 
 ######### End Customizations ###########
 
