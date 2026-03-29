@@ -3,7 +3,7 @@ services:
     image: ghcr.io/therepos/kasm-images/comfyui:latest
     container_name: comfyui
     ports:
-      - "8188:8188"
+      - "3030:8188"
     environment:
       - NVIDIA_DRIVER_CAPABILITIES=all
       - NVIDIA_VISIBLE_DEVICES=all
