@@ -47,8 +47,8 @@ jobs:
           push: true
           provenance: false
           tags: |
-            ${{ env.REGISTRY }}/therepos/kasm-images/upscayl:latest
-            ${{ env.REGISTRY }}/therepos/kasm-images/upscayl:${{ github.event.inputs.kasm_version || env.KASM_VERSION }}
+            ${{ env.REGISTRY }}/therepos/kasm/upscayl:latest
+            ${{ env.REGISTRY }}/therepos/kasm/upscayl:${{ github.event.inputs.kasm_version || env.KASM_VERSION }}
           build-args: |
             KASM_VERSION=${{ github.event.inputs.kasm_version || env.KASM_VERSION }}
           cache-from: type=gha,scope=upscayl
