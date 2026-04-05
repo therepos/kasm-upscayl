@@ -1,7 +1,7 @@
 ## Usage
 
 1. Requires NVIDIA GPU with drivers and NVIDA Container Toolkit.
-2. Docker pull `ghcr.io/therepos/kasm-images/upscayl:latest`.
+2. Docker pull `ghcr.io/therepos/kasm-upscayl/upscayl:latest`.
 3. Deploy docker compose via portainer stack.
 
 ## Structure
@@ -15,8 +15,7 @@ kasm-upscayl/
 ├── docker-compose.yml
 ├── Dockerfile
 ├── LICENSE
-├── README.md
-└── setup-sharedmount.sh
+└── README.md
 ```
 
 ## Resources
