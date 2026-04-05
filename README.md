@@ -7,15 +7,12 @@
 ## Structure
 
 ```
-kasm-upscayl/
-├── .github/
-│   └── workflows/
-│       └── build.yml
-├── .gitignore
-├── docker-compose.yml
-├── Dockerfile
-├── LICENSE
-└── README.md
+kasm/
+├── .github/workflows/
+└── upscayl/
+    ├── Dockerfile
+    ├── docker-compose.yml
+    └── ...app-specific files
 ```
 
 ## Resources

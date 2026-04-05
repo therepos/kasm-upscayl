@@ -1,11 +1,11 @@
-name: Build and Push to GHCR
+name: Build Upscayl
 
 on:
   push:
     branches: [main]
     paths:
-      - "Dockerfile"
-      - ".github/workflows/build.yml"
+      - "upscayl/**"
+      - ".github/workflows/ci-upscayl.yml"
   schedule:
     - cron: "0 3 * * 0"
   workflow_dispatch:
@@ -43,7 +43,7 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v5
         with:
-          context: .
+          context: ./upscayl
           push: true
           provenance: false
           tags: |
